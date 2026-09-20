@@ -1,0 +1,2614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>PRAVAHA AI — North Eastern Region Disaster Risk Platform</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+  </script>
+
+  <!-- Marker Cluster -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+
+  <script
+    src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js">
+  </script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f4f8',
+              100: '#d9e2ec',
+              500: '#334e68',
+              800: '#102a43',
+              900: '#0b1b2b'
+            },
+            risk: {
+              low: '#10b981',
+              moderate: '#f59e0b',
+              high: '#f97316',
+              critical: '#ef4444'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- ==========================================================
+       CUSTOM CSS
+       No separate CSS file is required.
+       ========================================================== -->
+  <style>
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* ==========================================================
+       LEAFLET MAP
+       ========================================================== */
+
+    #dashboardLeafletMap,
+    #fullLeafletMap {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+    }
+
+    .leaflet-container {
+      font-family: Inter, system-ui, sans-serif;
+      background: #0f172a;
+    }
+
+    /* ==========================================================
+       PRAVAHA MARKER
+       ========================================================== */
+
+    .pravaha-marker {
+      position: relative;
+      width: 22px;
+      height: 22px;
+    }
+
+    .pravaha-marker .pulse {
+      position: absolute;
+      width: 34px;
+      height: 34px;
+      left: -6px;
+      top: -6px;
+      border-radius: 50%;
+      opacity: .35;
+      animation: pravahaPulse 1.8s infinite;
+    }
+
+    .pravaha-marker .core {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 2px 7px rgba(0,0,0,.45);
+    }
+
+    @keyframes pravahaPulse {
+
+      0% {
+        transform: scale(.55);
+        opacity: .7;
+      }
+
+      70% {
+        transform: scale(1.5);
+        opacity: 0;
+      }
+
+      100% {
+        transform: scale(.55);
+        opacity: 0;
+      }
+
+    }
+
+    /* ==========================================================
+       POPUP
+       ========================================================== */
+
+    .pravaha-popup {
+      min-width: 250px;
+      max-width: 340px;
+    }
+
+    .pravaha-popup-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .pravaha-popup-subtitle {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .pravaha-popup-score {
+      font-size: 22px;
+      font-weight: 900;
+      margin: 7px 0;
+    }
+
+    .pravaha-popup-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .pravaha-popup-grid div {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 5px;
+      border-radius: 4px;
+      font-size: 10px;
+    }
+
+    /* ==========================================================
+       LEGEND
+       ========================================================== */
+
+    .pravaha-legend {
+      background: rgba(15,23,42,.94);
+      color: white;
+      padding: 9px 11px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      font-size: 11px;
+      line-height: 1.7;
+      box-shadow: 0 3px 12px rgba(0,0,0,.3);
+    }
+
+    .pravaha-legend-title {
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #cbd5e1;
+      margin-bottom: 3px;
+    }
+
+    .pravaha-legend-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pravaha-legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* ==========================================================
+       CHART
+       ========================================================== */
+
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 270px;
+    }
+
+    /* ==========================================================
+       API STATUS
+       ========================================================== */
+
+    .api-ok {
+      background: #ecfdf5 !important;
+      color: #047857 !important;
+      border-color: #a7f3d0 !important;
+    }
+
+    .api-error {
+      background: #fef2f2 !important;
+      color: #b91c1c !important;
+      border-color: #fecaca !important;
+    }
+
+    .api-loading {
+      background: #eff6ff !important;
+      color: #1d4ed8 !important;
+      border-color: #bfdbfe !important;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    /* ==========================================================
+       GIS SEARCH RESULT
+       ========================================================== */
+
+    .gis-result {
+      cursor: pointer;
+      transition: background .15s ease;
+    }
+
+    .gis-result:hover {
+      background: #f8fafc;
+    }
+
+    /* ==========================================================
+       GLOBAL MAP-CLICK ALERT FLASH
+       Triggered when a risk marker dot is clicked on either map;
+       overlays the whole app shell regardless of the active tab.
+       ========================================================== */
+
+    @keyframes pravahaFlashRed {
+      0%, 100% {
+        background-color: rgba(239, 68, 68, 0);
+        box-shadow:
+          inset 0 0 0 0 rgba(239, 68, 68, 0),
+          inset 0 0 0 rgba(239, 68, 68, 0);
+      }
+      50% {
+        background-color: rgba(239, 68, 68, 0.32);
+        box-shadow:
+          inset 0 0 50px 22px rgba(239, 68, 68, 0.95),
+          inset 0 0 280px rgba(239, 68, 68, 0.7);
+      }
+    }
+
+    @keyframes pravahaFlashYellow {
+      0%, 100% {
+        background-color: rgba(245, 158, 11, 0);
+        box-shadow:
+          inset 0 0 0 0 rgba(245, 158, 11, 0),
+          inset 0 0 0 rgba(245, 158, 11, 0);
+      }
+      50% {
+        background-color: rgba(245, 158, 11, 0.28);
+        box-shadow:
+          inset 0 0 50px 22px rgba(245, 158, 11, 0.9),
+          inset 0 0 280px rgba(245, 158, 11, 0.65);
+      }
+    }
+
+    #globalAlertFlash {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      pointer-events: none;
+    }
+
+    #globalAlertFlash.pravaha-flash-red {
+      animation: pravahaFlashRed 1s ease-in-out 12;
+    }
+
+    #globalAlertFlash.pravaha-flash-yellow {
+      animation: pravahaFlashYellow 1s ease-in-out 12;
+    }
+
+    #globalAlertBanner {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      z-index: 9999;
+      transform: translate(-50%, -140%);
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    #globalAlertBanner.pravaha-banner-show {
+      transform: translate(-50%, 0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #globalAlertBanner.pravaha-banner-red {
+      background: #dc2626;
+    }
+
+    #globalAlertBanner.pravaha-banner-yellow {
+      background: #d97706;
+    }
+
+  </style>
+</head>
+
+<body class="bg-slate-100 text-slate-900 antialiased h-screen flex flex-col overflow-hidden">
+
+  <!-- ==========================================================
+       HEADER
+       ========================================================== -->
+
+  <header
+    class="bg-brand-900 text-white h-14 px-4 flex items-center justify-between z-30 shrink-0 border-b border-brand-800 shadow-md">
+
+    <div class="flex items-center space-x-4">
+
+      <div class="flex items-center space-x-2.5">
+
+        <div
+          class="bg-blue-600 text-white p-1.5 rounded font-bold tracking-widest text-xs flex items-center">
+
+          <i
+            data-lucide="shield-alert"
+            class="w-4 h-4 mr-1 text-amber-300">
+          </i>
+
+          PRAVAHA
+
+        </div>
+
+        <span
+          class="text-xs px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-200 font-mono border border-blue-700/50">
+          AI v2.4
+        </span>
+
+      </div>
+
+      <div class="hidden md:flex h-4 w-px bg-slate-700"></div>
+
+      <div class="hidden md:flex items-center text-xs text-slate-300">
+
+        <i
+          data-lucide="map-pin"
+          class="w-3.5 h-3.5 mr-1 text-slate-400">
+        </i>
+
+        <span class="font-medium text-white mr-1">
+          Region:
+        </span>
+
+        North Eastern Himalayan Arc
+
+      </div>
+
+    </div>
+
+    <div class="hidden md:flex items-center space-x-6 text-xs">
+
+      <div
+        class="flex items-center space-x-2 bg-brand-800/80 px-3 py-1 rounded border border-slate-700/60">
+
+        <span class="relative flex h-2 w-2">
+
+          <span
+            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75">
+          </span>
+
+          <span
+            class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500">
+          </span>
+
+        </span>
+
+        <span class="font-medium text-emerald-400">
+          LIVE MONITORING
+        </span>
+
+        <span class="text-slate-400">
+
+          | Sync:
+
+          <span
+            id="clock"
+            class="font-mono text-slate-200">
+            --:--:-- IST
+          </span>
+
+        </span>
+
+      </div>
+
+      <div class="text-slate-400">
+
+        <i
+          data-lucide="database"
+          class="w-3.5 h-3.5 inline mr-1">
+        </i>
+
+        ML / GIS Linked
+
+      </div>
+
+    </div>
+
+    <div class="flex items-center space-x-3 text-xs">
+
+      <button
+        onclick="toggleGlobalAlertModal()"
+        class="relative p-1.5 text-slate-300 hover:text-white rounded hover:bg-slate-800">
+
+        <i
+          data-lucide="bell"
+          class="w-4 h-4">
+        </i>
+
+      </button>
+
+      <div class="h-4 w-px bg-slate-700"></div>
+
+      <div class="flex items-center space-x-2">
+
+        <div
+          class="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold text-xs">
+          NER
+        </div>
+
+        <div class="hidden lg:block">
+
+          <div class="font-semibold text-slate-200 text-xs">
+            NEC-SDMA Control
+          </div>
+
+          <div class="text-[10px] text-slate-400">
+            Operational Console
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </header>
+
+  <!-- ==========================================================
+       BODY
+       ========================================================== -->
+
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- ========================================================
+         SIDEBAR
+         ======================================================== -->
+
+    <aside
+      class="w-56 bg-brand-800 text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-700/60">
+
+      <div class="py-3 px-2">
+
+        <div
+          class="text-[10px] font-semibold text-slate-400 px-3 uppercase tracking-wider mb-2">
+
+          Operational Modules
+
+        </div>
+
+        <nav class="space-y-1">
+
+          <button
+            onclick="switchTab('dashboard')"
+            id="nav-dashboard"
+            class="nav-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded text-xs font-medium text-white bg-blue-600/90">
+
+            <i
+              data-lucide="layout-dashboard"
+              class="w-4 h-4">
+            </i>
+
+            <span>
+              Dashboard
+            </span>
+
+          </button>
+
+          <button
+            onclick="switchTab('risk-analysis')"
+            id="nav-risk-analysis"
+            class="nav-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded text-xs font-medium text-slate-300 hover:bg-slate-700/50">
+
+            <i
+              data-lucide="activity"
+              class="w-4 h-4">
+            </i>
+
+            <span>
+              Risk Analysis
+            </span>
+
+          </button>
+
+          <button
+            onclick="switchTab('risk-map')"
+            id="nav-risk-map"
+            class="nav-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded text-xs font-medium text-slate-300 hover:bg-slate-700/50">
+
+            <i
+              data-lucide="map"
+              class="w-4 h-4">
+            </i>
+
+            <span>
+              GIS Risk Map
+            </span>
+
+          </button>
+
+          <button
+            onclick="switchTab('forecast')"
+            id="nav-forecast"
+            class="nav-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded text-xs font-medium text-slate-300 hover:bg-slate-700/50">
+
+            <i
+              data-lucide="trending-up"
+              class="w-4 h-4">
+            </i>
+
+            <span>
+              72h Forecast
+            </span>
+
+          </button>
+
+          <button
+            onclick="switchTab('alerts')"
+            id="nav-alerts"
+            class="nav-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded text-xs font-medium text-slate-300 hover:bg-slate-700/50">
+
+            <i
+              data-lucide="alert-triangle"
+              class="w-4 h-4">
+            </i>
+
+            <span>
+              Active Alerts
+            </span>
+
+            <span
+              id="sidebarAlertCount"
+              class="ml-auto bg-risk-critical text-white text-[10px] px-1.5 py-0.2 rounded-full">
+              0
+            </span>
+
+          </button>
+
+          <button
+            onclick="switchTab('vulnerable-zones')"
+            id="nav-vulnerable-zones"
+            class="nav-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded text-xs font-medium text-slate-300 hover:bg-slate-700/50">
+
+            <i
+              data-lucide="layers"
+              class="w-4 h-4">
+            </i>
+
+            <span>
+              Vulnerable Corridors
+            </span>
+
+          </button>
+
+          <button
+            onclick="switchTab('feedback')"
+            id="nav-feedback"
+            class="nav-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded text-xs font-medium text-slate-300 hover:bg-slate-700/50">
+
+            <i
+              data-lucide="camera"
+              class="w-4 h-4">
+            </i>
+
+            <span>
+              Field Reports
+            </span>
+
+          </button>
+
+        </nav>
+
+        <div
+          class="mt-6 text-[10px] font-semibold text-slate-400 px-3 uppercase tracking-wider mb-2">
+
+          System
+
+        </div>
+
+        <nav class="space-y-1">
+
+          <button
+            onclick="refreshAllData()"
+            class="w-full flex items-center space-x-2.5 px-3 py-2 rounded text-xs font-medium text-slate-300 hover:bg-slate-700/50">
+
+            <i
+              data-lucide="refresh-cw"
+              class="w-4 h-4">
+            </i>
+
+            <span>
+              Refresh API Data
+            </span>
+
+          </button>
+
+          <button
+            onclick="showApiConfig()"
+            class="w-full flex items-center space-x-2.5 px-3 py-2 rounded text-xs font-medium text-slate-300 hover:bg-slate-700/50">
+
+            <i
+              data-lucide="settings"
+              class="w-4 h-4">
+            </i>
+
+            <span>
+              API Configuration
+            </span>
+
+          </button>
+
+        </nav>
+
+      </div>
+
+      <div
+        class="p-3 bg-brand-900/60 border-t border-slate-700/50 text-[11px] text-slate-400 space-y-1">
+
+        <div class="flex justify-between font-mono">
+
+          <span>
+            Prediction rows:
+          </span>
+
+          <span
+            id="footerPredictionCount"
+            class="text-emerald-400">
+            0
+          </span>
+
+        </div>
+
+        <div class="flex justify-between font-mono">
+
+          <span>
+            Map markers:
+          </span>
+
+          <span
+            id="footerMarkerCount"
+            class="text-blue-300">
+            0
+          </span>
+
+        </div>
+
+      </div>
+
+    </aside>
+
+    <!-- ========================================================
+         MAIN
+         ======================================================== -->
+
+    <main
+      class="flex-1 bg-slate-100 overflow-y-auto overflow-x-hidden">
+
+      <!-- ======================================================
+           DASHBOARD
+           ====================================================== -->
+
+      <section
+        id="view-dashboard"
+        class="p-4 space-y-4 max-w-[1650px] mx-auto w-full">
+
+        <!-- API STATUS -->
+
+        <div
+          id="apiStatus"
+          class="p-3 rounded-lg text-xs border api-loading">
+
+          <span
+            class="status-dot bg-blue-500">
+          </span>
+
+          Connecting to Smart Landslide Alert API…
+
+        </div>
+
+        <!-- ====================================================
+             METRIC CARDS
+             ==================================================== -->
+
+        <div
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+
+          <!-- CARD -->
+
+          <div
+            class="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+
+            <div
+              class="flex items-center justify-between text-slate-500 text-xs font-semibold">
+
+              <span>
+                REGIONAL RISK
+              </span>
+
+              <i
+                data-lucide="shield-alert"
+                class="w-4 h-4 text-risk-high">
+              </i>
+
+            </div>
+
+            <div
+              class="mt-2 flex items-baseline justify-between">
+
+              <span class="text-2xl font-bold">
+
+                <span id="liveRegionalRiskScore">
+                  --
+                </span>
+
+                <span
+                  class="text-xs font-normal text-slate-500">
+                  /100
+                </span>
+
+              </span>
+
+              <span
+                id="liveRegionalRiskLevel"
+                class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+
+                LOADING
+
+              </span>
+
+            </div>
+
+            <div
+              class="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-1.5">
+
+              Average current ML risk
+
+            </div>
+
+          </div>
+
+          <!-- CARD -->
+
+          <div
+            class="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+
+            <div
+              class="flex items-center justify-between text-slate-500 text-xs font-semibold">
+
+              <span>
+                ML PREDICTIONS
+              </span>
+
+              <i
+                data-lucide="mountain"
+                class="w-4 h-4 text-risk-critical">
+              </i>
+
+            </div>
+
+            <div class="mt-2">
+
+              <span
+                id="liveTotalPredictions"
+                class="text-2xl font-bold">
+                --
+              </span>
+
+            </div>
+
+            <div
+              class="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-1.5">
+
+              Valid geospatial ML rows
+
+            </div>
+
+          </div>
+
+          <!-- CARD -->
+
+          <div
+            class="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+
+            <div
+              class="flex items-center justify-between text-slate-500 text-xs font-semibold">
+
+              <span>
+                CRITICAL ZONES
+              </span>
+
+              <i
+                data-lucide="flame"
+                class="w-4 h-4 text-risk-critical">
+              </i>
+
+            </div>
+
+            <div class="mt-2">
+
+              <span
+                id="liveCriticalZones"
+                class="text-2xl font-bold">
+                --
+              </span>
+
+            </div>
+
+            <div
+              class="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-1.5">
+
+              High:
+              <span
+                id="liveHighZones"
+                class="font-bold text-orange-600">
+                --
+              </span>
+
+            </div>
+
+          </div>
+
+          <!-- CARD -->
+
+          <div
+            class="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+
+            <div
+              class="flex items-center justify-between text-slate-500 text-xs font-semibold">
+
+              <span>
+                ACTIVE WARNINGS
+              </span>
+
+              <i
+                data-lucide="bell-ring"
+                class="w-4 h-4 text-risk-critical">
+              </i>
+
+            </div>
+
+            <div class="mt-2">
+
+              <span
+                id="liveAlertCount"
+                class="text-2xl font-bold text-red-600">
+                --
+              </span>
+
+            </div>
+
+            <div
+              class="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-1.5">
+
+              Critical:
+              <span
+                id="liveCriticalAlertCount">
+                --
+              </span>
+
+            </div>
+
+          </div>
+
+          <!-- CARD -->
+
+          <div
+            class="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+
+            <div
+              class="flex items-center justify-between text-slate-500 text-xs font-semibold">
+
+              <span>
+                CORRIDORS AT RISK
+              </span>
+
+              <i
+                data-lucide="route"
+                class="w-4 h-4 text-slate-600">
+              </i>
+
+            </div>
+
+            <div class="mt-2">
+
+              <span
+                id="liveCorridorsAtRisk"
+                class="text-2xl font-bold">
+                --
+              </span>
+
+            </div>
+
+            <div
+              class="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-1.5">
+
+              State / district groups
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ====================================================
+             DASHBOARD MAP
+             ==================================================== -->
+
+        <div
+          class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+          <div
+            class="lg:col-span-2 bg-white rounded-md border border-slate-200 shadow-sm flex flex-col h-[560px]">
+
+            <div
+              class="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+
+              <div
+                class="flex items-center space-x-2">
+
+                <i
+                  data-lucide="map"
+                  class="w-4 h-4 text-slate-700">
+                </i>
+
+                <h2
+                  class="text-xs font-bold uppercase tracking-wider">
+
+                  Live ML Geographic Risk Map
+
+                </h2>
+
+                <span
+                  class="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.5 rounded font-mono">
+
+                  EPSG:4326
+
+                </span>
+
+              </div>
+
+              <div
+                class="flex items-center space-x-2 text-xs">
+
+                <label
+                  class="flex items-center space-x-1 bg-white border border-slate-200 rounded px-2 py-1">
+
+                  <input
+                    type="checkbox"
+                    id="toggleDashboardMarkers"
+                    checked
+                    onchange="applyDashboardMapFilters()">
+
+                  <span class="text-[11px]">
+                    ML Hotspots
+                  </span>
+
+                </label>
+
+                <select
+                  id="dashboardRiskFilter"
+                  onchange="applyDashboardMapFilters()"
+                  class="bg-white border border-slate-200 rounded px-2 py-1 text-xs">
+
+                  <option value="ALL">
+                    All Risk
+                  </option>
+
+                  <option value="CRITICAL">
+                    Critical
+                  </option>
+
+                  <option value="HIGH">
+                    High
+                  </option>
+
+                  <option value="MODERATE">
+                    Moderate
+                  </option>
+
+                  <option value="LOW">
+                    Low
+                  </option>
+
+                </select>
+
+                <button
+                  onclick="fitDashboardMap()"
+                  class="bg-slate-800 text-white rounded px-2 py-1 text-[11px]">
+
+                  Fit Data
+
+                </button>
+
+              </div>
+
+            </div>
+
+            <div
+              class="relative flex-1">
+
+              <div
+                id="dashboardLeafletMap">
+              </div>
+
+              <div
+                id="dashboardMapCount"
+                class="absolute top-3 right-3 z-[500] bg-slate-900/90 text-white text-[10px] px-2 py-1.5 rounded border border-slate-700">
+
+                0 markers
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- ==================================================
+               SELECTED RECORD
+               ================================================== -->
+
+          <div
+            class="bg-white rounded-md border border-slate-200 shadow-sm flex flex-col h-[560px]">
+
+            <div
+              class="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+
+              <div
+                class="flex items-center space-x-2">
+
+                <i
+                  data-lucide="radio"
+                  class="w-4 h-4 text-blue-600">
+                </i>
+
+                <h2
+                  class="text-xs font-bold uppercase tracking-wider">
+
+                  Selected Location
+
+                </h2>
+
+              </div>
+
+              <span
+                id="selectedDistrictTag"
+                class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono">
+
+                No selection
+
+              </span>
+
+            </div>
+
+            <div
+              class="p-4 flex-1 overflow-y-auto space-y-4 text-xs">
+
+              <div
+                class="bg-slate-50 p-3 rounded border border-slate-200 flex items-start justify-between">
+
+                <div>
+
+                  <h3
+                    id="selectedLocName"
+                    class="font-bold text-sm">
+
+                    Select a map marker
+
+                  </h3>
+
+                  <div
+                    id="selectedLocCoords"
+                    class="text-[11px] text-slate-500 mt-0.5">
+
+                    Latitude / longitude
+
+                  </div>
+
+                </div>
+
+                <span
+                  id="selectedLocRiskBadge"
+                  class="px-2 py-1 rounded text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300">
+
+                  --
+
+                </span>
+
+              </div>
+
+              <div
+                class="grid grid-cols-2 gap-2.5">
+
+                <div
+                  class="p-2.5 rounded bg-slate-50 border border-slate-200">
+
+                  <div class="text-[11px] text-slate-600 font-semibold">
+                    Original hazard
+                  </div>
+
+                  <div
+                    id="selectedLocHazard"
+                    class="text-base font-bold mt-1">
+                    --
+                  </div>
+
+                </div>
+
+                <div
+                  class="p-2.5 rounded bg-slate-50 border border-slate-200">
+
+                  <div class="text-[11px] text-slate-600 font-semibold">
+                    Predicted hazard
+                  </div>
+
+                  <div
+                    id="selectedLocPredHazard"
+                    class="text-base font-bold mt-1">
+                    --
+                  </div>
+
+                </div>
+
+                <div
+                  class="p-2.5 rounded bg-blue-50 border border-blue-100">
+
+                  <div class="text-[11px] text-blue-700 font-semibold">
+                    Confidence
+                  </div>
+
+                  <div
+                    id="selectedLocConfidence"
+                    class="text-base font-bold mt-1">
+                    --
+                  </div>
+
+                </div>
+
+                <div
+                  class="p-2.5 rounded bg-amber-50 border border-amber-100">
+
+                  <div class="text-[11px] text-amber-800 font-semibold">
+                    Event type
+                  </div>
+
+                  <div
+                    id="selectedLocEventType"
+                    class="text-base font-bold mt-1">
+                    --
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div
+                class="bg-blue-900 text-white p-3 rounded-md border border-blue-800">
+
+                <div
+                  class="flex items-center space-x-1.5 mb-1 text-blue-200 text-xs font-bold uppercase tracking-wider">
+
+                  <i
+                    data-lucide="sparkles"
+                    class="w-3.5 h-3.5 text-amber-400">
+                  </i>
+
+                  <span>
+                    PRAVAHA AI Interpretation
+                  </span>
+
+                </div>
+
+                <p
+                  id="selectedLocAiReason"
+                  class="text-[11px] text-blue-100 leading-relaxed">
+
+                  Select a prediction record.
+
+                </p>
+
+              </div>
+
+              <div
+                class="border-t border-slate-200 pt-3">
+
+                <div
+                  class="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">
+
+                  Data integrity
+
+                </div>
+
+                <div
+                  id="selectedLocOperationalNote"
+                  class="text-[11px] text-slate-600">
+
+                  Values are shown from the API/ML record. Fields not returned by the backend are not fabricated.
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ====================================================
+             CHART + ALERTS
+             ==================================================== -->
+
+        <div
+          class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+          <div
+            class="lg:col-span-2 bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+
+            <div
+              class="flex items-center justify-between mb-2">
+
+              <div
+                class="flex items-center space-x-2">
+
+                <i
+                  data-lucide="bar-chart-3"
+                  class="w-4 h-4 text-blue-600">
+                </i>
+
+                <h2
+                  class="text-xs font-bold uppercase tracking-wider">
+
+                  ML Risk Distribution
+
+                </h2>
+
+              </div>
+
+              <span
+                id="chartDataNote"
+                class="text-[10px] text-slate-400">
+
+                --
+
+              </span>
+
+            </div>
+
+            <div class="chart-wrap">
+
+              <canvas
+                id="dashboardTrendChart">
+              </canvas>
+
+            </div>
+
+          </div>
+
+          <div
+            class="bg-white rounded-md border border-slate-200 p-3 shadow-sm flex flex-col">
+
+            <div
+              class="flex items-center justify-between pb-2 border-b border-slate-200 mb-2">
+
+              <div
+                class="flex items-center space-x-2">
+
+                <i
+                  data-lucide="alert-octagon"
+                  class="w-4 h-4 text-risk-critical">
+                </i>
+
+                <h2
+                  class="text-xs font-bold uppercase tracking-wider">
+
+                  Top ML Alerts
+
+                </h2>
+
+              </div>
+
+              <span
+                id="dashboardMiniAlertCount"
+                class="bg-red-100 text-red-800 text-[10px] px-1.5 py-0.5 rounded font-bold">
+
+                0
+
+              </span>
+
+            </div>
+
+            <div
+              id="dashboardMiniAlerts"
+              class="space-y-2 overflow-y-auto max-h-[250px] flex-1">
+            </div>
+
+            <button
+              onclick="switchTab('alerts')"
+              class="mt-2 w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold text-xs border border-slate-300">
+
+              Open Alert Console →
+
+            </button>
+
+          </div>
+
+        </div>
+
+        <!-- ====================================================
+             TABLE
+             ==================================================== -->
+
+        <div
+          class="bg-white rounded-md border border-slate-200 shadow-sm overflow-hidden">
+
+          <div
+            class="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+
+            <div
+              class="flex items-center space-x-2">
+
+              <i
+                data-lucide="table"
+                class="w-4 h-4 text-slate-700">
+              </i>
+
+              <h2
+                class="text-xs font-bold uppercase tracking-wider">
+
+                Highest-Risk ML Records
+
+              </h2>
+
+            </div>
+
+            <span
+              id="dashboardTableInfo"
+              class="text-[10px] text-slate-500">
+
+              0 records
+
+            </span>
+
+          </div>
+
+          <div class="overflow-x-auto">
+
+            <table
+              class="w-full text-left text-xs">
+
+              <thead
+                class="bg-slate-100 text-slate-600 font-bold border-b border-slate-200 text-[10px] uppercase">
+
+                <tr>
+
+                  <th class="p-2.5">
+                    State
+                  </th>
+
+                  <th class="p-2.5">
+                    District
+                  </th>
+
+                  <th class="p-2.5">
+                    Coordinates
+                  </th>
+
+                  <th class="p-2.5">
+                    Hazard
+                  </th>
+
+                  <th class="p-2.5">
+                    Predicted
+                  </th>
+
+                  <th class="p-2.5 text-center">
+                    Confidence
+                  </th>
+
+                  <th class="p-2.5 text-center">
+                    Event
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody
+                id="dashboardVulnerableTable"
+                class="divide-y divide-slate-100 text-[11px]">
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ======================================================
+           RISK ANALYSIS
+           ====================================================== -->
+
+      <section
+        id="view-risk-analysis"
+        class="p-4 space-y-4 max-w-[1650px] mx-auto w-full hidden">
+
+        <div
+          class="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+
+          <h1 class="text-base font-bold">
+            Deep Risk Diagnostic & Decision Support
+          </h1>
+
+          <p class="text-xs text-slate-500 mt-1">
+            Analysis is populated from the selected ML prediction.
+          </p>
+
+          <div
+            class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 bg-slate-50 p-3 rounded border border-slate-200">
+
+            <div>
+
+              <label
+                class="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+
+                State
+
+              </label>
+
+              <select
+                id="analysisState"
+                onchange="updateAnalysisSelectors()"
+                class="w-full bg-white border border-slate-300 rounded p-1.5 text-xs">
+              </select>
+
+            </div>
+
+            <div>
+
+              <label
+                class="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+
+                District
+
+              </label>
+
+              <select
+                id="analysisDistrict"
+                onchange="updateAnalysisLocations()"
+                class="w-full bg-white border border-slate-300 rounded p-1.5 text-xs">
+              </select>
+
+            </div>
+
+            <div>
+
+              <label
+                class="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+
+                Record
+
+              </label>
+
+              <select
+                id="analysisLocation"
+                onchange="updateAnalysisData()"
+                class="w-full bg-white border border-slate-300 rounded p-1.5 text-xs">
+              </select>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <div
+          class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+          <div
+            class="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+
+            <div
+              class="text-xs font-bold text-slate-500 uppercase mb-2">
+
+              Record Risk Score
+
+            </div>
+
+            <div
+              class="flex items-center justify-between bg-slate-50 p-4 rounded border border-slate-200">
+
+              <div>
+
+                <div
+                  id="anaRiskScore"
+                  class="text-4xl font-black">
+
+                  --
+
+                </div>
+
+                <div
+                  id="anaRiskCategory"
+                  class="text-xs font-bold mt-1 uppercase">
+
+                  NO DATA
+
+                </div>
+
+              </div>
+
+              <div
+                class="w-24 h-24">
+
+                <canvas
+                  id="anaGaugeChart">
+                </canvas>
+
+              </div>
+
+            </div>
+
+            <div
+              class="mt-4 space-y-2 text-[11px] text-slate-600">
+
+              <div class="flex justify-between">
+                <span>Confidence</span>
+                <strong id="anaConfidence">--</strong>
+              </div>
+
+              <div class="flex justify-between">
+                <span>Hazard</span>
+                <strong id="anaHazard">--</strong>
+              </div>
+
+              <div class="flex justify-between">
+                <span>Predicted</span>
+                <strong id="anaPredHazard">--</strong>
+              </div>
+
+              <div class="flex justify-between">
+                <span>Event</span>
+                <strong id="anaEvent">--</strong>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div
+            class="lg:col-span-2 bg-brand-900 text-white rounded-md border border-brand-800 p-4 shadow-sm">
+
+            <div
+              class="flex items-center space-x-2 text-amber-300 font-bold text-xs uppercase tracking-wider mb-2">
+
+              <i
+                data-lucide="cpu"
+                class="w-4 h-4">
+              </i>
+
+              <span>
+                PRAVAHA AI Diagnostic Reasoning
+              </span>
+
+            </div>
+
+            <h3 class="text-sm font-bold mb-1">
+              Record-backed explanation
+            </h3>
+
+            <p
+              id="anaAiReason"
+              class="text-xs text-slate-200 leading-relaxed">
+
+              Select a record.
+
+            </p>
+
+            <div
+              class="mt-4 grid grid-cols-3 gap-2 text-[11px] border-t border-slate-700 pt-2.5">
+
+              <div>
+                <span class="text-slate-400">
+                  State:
+                </span>
+
+                <strong id="anaState">
+                  --
+                </strong>
+
+              </div>
+
+              <div>
+                <span class="text-slate-400">
+                  District:
+                </span>
+
+                <strong id="anaDistrict">
+                  --
+                </strong>
+
+              </div>
+
+              <div>
+                <span class="text-slate-400">
+                  Coordinates:
+                </span>
+
+                <strong id="anaCoords">
+                  --
+                </strong>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ======================================================
+           FULL GIS MAP
+           ====================================================== -->
+
+      <section
+        id="view-risk-map"
+        class="h-full flex flex-col hidden">
+
+        <div
+          class="p-3 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0">
+
+          <div
+            class="flex items-center space-x-3">
+
+            <h1
+              class="text-sm font-bold text-slate-800">
+
+              GIS Command Map
+
+            </h1>
+
+            <div
+              class="flex bg-slate-100 p-0.5 rounded border border-slate-300 text-xs">
+
+              <button
+                onclick="setMapHazard('all')"
+                id="btnHazAll"
+                class="px-2.5 py-1 rounded font-medium bg-blue-600 text-white">
+
+                All
+
+              </button>
+
+              <button
+                onclick="setMapHazard('slide')"
+                id="btnHazSlide"
+                class="px-2.5 py-1 rounded font-medium text-slate-700 hover:bg-slate-200">
+
+                Slide
+
+              </button>
+
+              <button
+                onclick="setMapHazard('fall')"
+                id="btnHazFall"
+                class="px-2.5 py-1 rounded font-medium text-slate-700 hover:bg-slate-200">
+
+                Fall
+
+              </button>
+
+              <button
+                onclick="setMapHazard('flow')"
+                id="btnHazFlow"
+                class="px-2.5 py-1 rounded font-medium text-slate-700 hover:bg-slate-200">
+
+                Flow
+
+              </button>
+
+              <button
+                onclick="setMapHazard('other')"
+                id="btnHazOther"
+                class="px-2.5 py-1 rounded font-medium text-slate-700 hover:bg-slate-200">
+
+                Other
+
+              </button>
+
+            </div>
+
+          </div>
+
+          <div
+            class="flex items-center space-x-2 text-xs">
+
+            <input
+              id="gisSearchInput"
+              type="text"
+              placeholder="Search state, district, event or ID…"
+              class="w-64 bg-slate-50 border border-slate-300 rounded px-2.5 py-1 text-xs">
+
+            <button
+              onclick="searchGIS()"
+              class="bg-brand-800 text-white px-3 py-1 rounded font-medium">
+
+              Search
+
+            </button>
+
+            <button
+              onclick="fitFullMap()"
+              class="bg-slate-200 text-slate-800 px-3 py-1 rounded font-medium">
+
+              Fit Data
+
+            </button>
+
+          </div>
+
+        </div>
+
+        <div
+          class="flex-1 bg-slate-950 relative overflow-hidden">
+
+          <div
+            id="fullLeafletMap"
+            class="absolute inset-0">
+          </div>
+
+          <div
+            class="absolute top-4 left-4 z-[500] bg-brand-900/95 text-white p-3 rounded-md border border-slate-700 text-xs shadow-xl w-64">
+
+            <div
+              class="font-bold text-slate-200 border-b border-slate-700 pb-1 mb-2 uppercase text-[10px]">
+
+              GIS Status
+
+            </div>
+
+            <div class="space-y-1.5 text-[11px]">
+
+              <div class="flex justify-between">
+                <span>Records</span>
+                <strong id="gisTotalRecords">0</strong>
+              </div>
+
+              <div class="flex justify-between">
+                <span>Visible</span>
+                <strong id="gisVisibleRecords">0</strong>
+              </div>
+
+              <div class="flex justify-between">
+                <span>Critical</span>
+                <strong
+                  id="gisCriticalRecords"
+                  class="text-red-300">
+                  0
+                </strong>
+              </div>
+
+              <div class="flex justify-between">
+                <span>States</span>
+                <strong id="gisStateCount">0</strong>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div
+            class="absolute bottom-4 right-4 z-[500] bg-white/95 text-slate-800 p-3.5 rounded-md border border-slate-300 shadow-2xl w-80 text-xs">
+
+            <div
+              class="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
+
+              <span
+                id="gisNodeName"
+                class="font-bold">
+
+                No record selected
+
+              </span>
+
+              <span
+                id="gisNodeBadge"
+                class="bg-slate-100 text-slate-700 text-[10px] px-1.5 py-0.5 rounded font-bold">
+
+                --
+
+              </span>
+
+            </div>
+
+            <p
+              id="gisNodeDesc"
+              class="text-[11px] text-slate-600 mb-2">
+
+              Click a marker to inspect the ML record.
+
+            </p>
+
+            <div
+              class="grid grid-cols-2 gap-2 text-[10px] font-mono bg-slate-50 p-2 rounded border border-slate-200">
+
+              <div>
+                Score:
+                <span
+                  class="font-bold"
+                  id="gisNodeScore">
+                  --
+                </span>
+              </div>
+
+              <div>
+                Hazard:
+                <span
+                  class="font-bold"
+                  id="gisNodeHazard">
+                  --
+                </span>
+              </div>
+
+              <div>
+                Predicted:
+                <span
+                  class="font-bold"
+                  id="gisNodePred">
+                  --
+                </span>
+              </div>
+
+              <div>
+                Event:
+                <span
+                  class="font-bold"
+                  id="gisNodeEvent">
+                  --
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ======================================================
+           FORECAST
+           ====================================================== -->
+
+      <section
+        id="view-forecast"
+        class="p-4 space-y-4 max-w-[1650px] mx-auto w-full hidden">
+
+        <!-- HEADER / CONTROLS -->
+        <div
+          class="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+
+          <div class="flex flex-wrap items-start justify-between gap-3">
+
+            <div>
+
+              <h1 class="text-base font-bold">
+                72-Hour Hydro-Meteorological Forecast
+              </h1>
+
+              <p class="text-xs text-slate-500 mt-1 max-w-3xl">
+                Live hourly rainfall, soil-moisture and humidity forecasts are coupled with the
+                PRAVAHA ML susceptibility score to compute an hour-by-hour landslide
+                triggering index for the highest-risk districts of the North-Eastern Region.
+              </p>
+
+            </div>
+
+            <div class="flex items-center gap-2">
+
+              <select
+                id="forecastDistrict"
+                onchange="selectForecastDistrict(this.value)"
+                class="text-xs border border-slate-300 rounded px-2 py-1.5 bg-white min-w-[220px]">
+                <option value="">Waiting for ML data…</option>
+              </select>
+
+              <button
+                onclick="loadForecast(true)"
+                class="text-xs px-3 py-1.5 rounded bg-slate-800 text-white hover:bg-slate-700">
+                Refresh
+              </button>
+
+            </div>
+
+          </div>
+
+          <div
+            id="forecastStatus"
+            class="mt-3 text-[11px] text-slate-500">
+            Forecast not loaded yet.
+          </div>
+
+        </div>
+
+        <!-- LOADING -->
+        <div
+          id="forecastLoading"
+          class="hidden bg-white rounded-md border border-slate-200 p-6 shadow-sm text-center text-xs text-slate-500">
+          Fetching hourly meteorological forecast and running the triggering model…
+        </div>
+
+        <!-- ERROR -->
+        <div
+          id="forecastError"
+          class="hidden bg-white rounded-md border border-red-200 p-4 shadow-sm">
+
+          <div class="text-sm font-semibold text-red-700">
+            Forecast unavailable
+          </div>
+
+          <div
+            id="forecastErrorMessage"
+            class="text-xs text-red-600 mt-1">
+          </div>
+
+          <div class="text-[11px] text-slate-500 mt-2">
+            No synthetic rainfall is substituted when the meteorological service cannot be
+            reached — the panel stays empty by design.
+          </div>
+
+          <button
+            onclick="loadForecast(true)"
+            class="mt-3 text-xs px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-500">
+            Retry
+          </button>
+
+        </div>
+
+        <!-- BODY -->
+        <div id="forecastBody" class="space-y-4 hidden">
+
+          <!-- SUMMARY CARDS -->
+          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+
+            <div class="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+              <div class="text-[10px] uppercase tracking-wide text-slate-500">Peak 72h Risk</div>
+              <div id="fcPeakRisk" class="text-xl font-bold mt-1">--</div>
+              <div id="fcPeakBadge" class="text-[10px] font-semibold mt-1">--</div>
+            </div>
+
+            <div class="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+              <div class="text-[10px] uppercase tracking-wide text-slate-500">Peak Window</div>
+              <div id="fcPeakWindow" class="text-sm font-bold mt-1">--</div>
+              <div id="fcPeakLead" class="text-[10px] text-slate-500 mt-1">--</div>
+            </div>
+
+            <div class="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+              <div class="text-[10px] uppercase tracking-wide text-slate-500">Rainfall Next 72h</div>
+              <div id="fcRain72" class="text-xl font-bold mt-1">--</div>
+              <div class="text-[10px] text-slate-500 mt-1">Accumulated</div>
+            </div>
+
+            <div class="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+              <div class="text-[10px] uppercase tracking-wide text-slate-500">Max Rolling 24h</div>
+              <div id="fcRain24" class="text-xl font-bold mt-1">--</div>
+              <div class="text-[10px] text-slate-500 mt-1">Trigger threshold 100 mm</div>
+            </div>
+
+            <div class="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+              <div class="text-[10px] uppercase tracking-wide text-slate-500">Antecedent 72h</div>
+              <div id="fcAnte72" class="text-xl font-bold mt-1">--</div>
+              <div class="text-[10px] text-slate-500 mt-1">Already-wet catchment</div>
+            </div>
+
+            <div class="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+              <div class="text-[10px] uppercase tracking-wide text-slate-500">ML Susceptibility</div>
+              <div id="fcBaseRisk" class="text-xl font-bold mt-1">--</div>
+              <div id="fcSites" class="text-[10px] text-slate-500 mt-1">--</div>
+            </div>
+
+          </div>
+
+          <!-- CHART -->
+          <div class="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+
+            <div class="flex items-center justify-between">
+
+              <h2 class="text-sm font-bold">
+                Hourly Triggering Index vs Forecast Rainfall
+              </h2>
+
+              <div id="forecastChartMeta" class="text-[11px] text-slate-500">--</div>
+
+            </div>
+
+            <div class="mt-3" style="height: 320px;">
+              <canvas id="forecastChart"></canvas>
+            </div>
+
+            <div class="text-[11px] text-slate-500 mt-2">
+              Risk = 0.40 × ML susceptibility + 0.60 × rainfall triggering index
+              (rolling 24h rainfall, decaying antecedent precipitation index, near-surface soil moisture).
+            </div>
+
+          </div>
+
+          <!-- DAY WINDOWS -->
+          <div id="forecastWindows" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+
+            <!-- 6-HOURLY TABLE -->
+            <div class="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+
+              <h2 class="text-sm font-bold">
+                Six-Hourly Breakdown
+              </h2>
+
+              <div class="mt-3 overflow-auto max-h-[420px]">
+
+                <table class="w-full text-xs">
+
+                  <thead class="text-[10px] uppercase text-slate-500 border-b border-slate-200">
+                    <tr>
+                      <th class="text-left py-1.5">Window (IST)</th>
+                      <th class="text-right py-1.5">Rain (mm)</th>
+                      <th class="text-right py-1.5">Peak Risk</th>
+                      <th class="text-left py-1.5 pl-3">Level</th>
+                    </tr>
+                  </thead>
+
+                  <tbody id="forecastTableBody"></tbody>
+
+                </table>
+
+              </div>
+
+            </div>
+
+            <!-- DISTRICT RANKING -->
+            <div class="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+
+              <h2 class="text-sm font-bold">
+                District Ranking — Next 72 Hours
+              </h2>
+
+              <div class="mt-3 overflow-auto max-h-[420px]">
+
+                <table class="w-full text-xs">
+
+                  <thead class="text-[10px] uppercase text-slate-500 border-b border-slate-200">
+                    <tr>
+                      <th class="text-left py-1.5">District</th>
+                      <th class="text-right py-1.5">Rain 72h</th>
+                      <th class="text-right py-1.5">Peak Risk</th>
+                      <th class="text-left py-1.5 pl-3">Level</th>
+                    </tr>
+                  </thead>
+
+                  <tbody id="forecastRankingBody"></tbody>
+
+                </table>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- ADVISORY -->
+          <div class="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+
+            <h2 class="text-sm font-bold">
+              Operational Advisory
+            </h2>
+
+            <div id="forecastAdvisory" class="mt-2 space-y-2 text-xs text-slate-700"></div>
+
+            <div class="text-[10px] text-slate-400 mt-3">
+              Meteorological source: Open-Meteo hourly forecast API (ICON / IFS blend), Asia/Kolkata time.
+              Susceptibility source: PRAVAHA ML ensemble output loaded from the backend.
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ======================================================
+           ALERTS
+           ====================================================== -->
+
+      <section
+        id="view-alerts"
+        class="p-4 space-y-4 max-w-[1650px] mx-auto w-full hidden">
+
+        <div
+          class="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+
+          <h1 class="text-base font-bold">
+            ML-Generated Alert Console
+          </h1>
+
+          <p class="text-xs text-slate-500 mt-1">
+            Alerts are calculated from the loaded ML risk score.
+          </p>
+
+        </div>
+
+        <div
+          class="flex items-center space-x-2 border-b border-slate-200 pb-2 text-xs">
+
+          <button
+            onclick="filterAlerts('ALL')"
+            class="px-2.5 py-1 rounded bg-slate-800 text-white">
+            All
+          </button>
+
+          <button
+            onclick="filterAlerts('CRITICAL')"
+            class="px-2.5 py-1 rounded bg-red-100 text-red-800 border border-red-300">
+            Critical
+          </button>
+
+          <button
+            onclick="filterAlerts('HIGH')"
+            class="px-2.5 py-1 rounded bg-orange-100 text-orange-800 border border-orange-300">
+            High
+          </button>
+
+          <button
+            onclick="filterAlerts('MODERATE')"
+            class="px-2.5 py-1 rounded bg-amber-100 text-amber-800 border border-amber-300">
+            Moderate
+          </button>
+
+        </div>
+
+        <div
+          id="alertsFullList"
+          class="space-y-3">
+        </div>
+
+      </section>
+
+      <!-- ======================================================
+           VULNERABLE
+           ====================================================== -->
+
+      <section
+        id="view-vulnerable-zones"
+        class="p-4 space-y-4 max-w-[1650px] mx-auto w-full hidden">
+
+        <div
+          class="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+
+          <h1 class="text-base font-bold">
+            State / District Vulnerability Matrix
+          </h1>
+
+          <p class="text-xs text-slate-500 mt-1">
+
+            Grouped directly from the current ML records.
+
+          </p>
+
+        </div>
+
+        <div
+          class="bg-white rounded-md border border-slate-200 shadow-sm overflow-hidden">
+
+          <div
+            class="p-3 bg-slate-50 border-b border-slate-200">
+
+            <span
+              class="font-bold text-xs uppercase text-slate-800">
+
+              Current High-Risk Groups
+
+            </span>
+
+          </div>
+
+          <div class="overflow-x-auto">
+
+            <table
+              class="w-full text-xs text-left">
+
+              <thead
+                class="bg-slate-100 text-slate-600 font-bold border-b border-slate-200 text-[10px]">
+
+                <tr>
+
+                  <th class="p-3">
+                    State
+                  </th>
+
+                  <th class="p-3">
+                    District
+                  </th>
+
+                  <th class="p-3 text-center">
+                    Records
+                  </th>
+
+                  <th class="p-3 text-center">
+                    Critical
+                  </th>
+
+                  <th class="p-3 text-center">
+                    High
+                  </th>
+
+                  <th class="p-3 text-center">
+                    Avg Risk
+                  </th>
+
+                  <th class="p-3">
+                    Dominant Event
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody
+                id="vulnerableFullTable"
+                class="divide-y divide-slate-100 text-[11px]">
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <section
+        id="view-feedback"
+        class="p-4 space-y-4 max-w-[1650px] mx-auto w-full hidden">
+
+        <!-- HEADER -->
+        <div
+          class="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+
+          <h1 class="text-base font-bold">
+            Community Field Reports
+          </h1>
+
+          <p class="text-xs text-slate-500 mt-1 max-w-3xl">
+            Residents, highway patrols and field volunteers can submit ground-level photos and
+            short notes from a site — cracks, seepage, debris on the carriageway — to support the
+            ML risk picture with on-the-ground observation.
+          </p>
+
+          <div
+            class="mt-3 p-2.5 rounded border border-amber-200 bg-amber-50 text-amber-800 text-[11px] flex items-start gap-2">
+
+            <i data-lucide="info" class="w-3.5 h-3.5 mt-0.5 flex-shrink-0"></i>
+
+            <span>
+              Demo build: submissions and photos are stored only in this browser
+              (<code class="bg-amber-100 px-1 rounded">localStorage</code>), not on a server, so
+              they are private to this device and are not shared with other users. A few
+              placeholder "Sample" reports are pre-loaded to show the layout.
+            </span>
+
+          </div>
+
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+
+          <!-- SUBMIT FORM -->
+          <div
+            class="xl:col-span-1 bg-white rounded-md border border-slate-200 p-4 shadow-sm h-fit">
+
+            <h2 class="text-sm font-bold mb-3">
+              Submit a Field Report
+            </h2>
+
+            <form
+              id="feedbackForm"
+              onsubmit="submitFeedback(event)"
+              class="space-y-3">
+
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                  Your Name (optional)
+                </label>
+                <input
+                  id="feedbackName"
+                  type="text"
+                  maxlength="60"
+                  placeholder="e.g. Field Volunteer"
+                  class="w-full bg-white border border-slate-300 rounded p-1.5 text-xs" />
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                    State
+                  </label>
+                  <select
+                    id="feedbackState"
+                    class="w-full bg-white border border-slate-300 rounded p-1.5 text-xs">
+                    <option value="Assam">Assam</option>
+                    <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                    <option value="Manipur">Manipur</option>
+                    <option value="Meghalaya">Meghalaya</option>
+                    <option value="Mizoram">Mizoram</option>
+                    <option value="Nagaland">Nagaland</option>
+                    <option value="Sikkim">Sikkim</option>
+                    <option value="Tripura">Tripura</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                    District
+                  </label>
+                  <input
+                    id="feedbackDistrict"
+                    type="text"
+                    maxlength="60"
+                    placeholder="e.g. Aizawl"
+                    class="w-full bg-white border border-slate-300 rounded p-1.5 text-xs" />
+                </div>
+
+              </div>
+
+              <div>
+
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                  Observation
+                </label>
+
+                <textarea
+                  id="feedbackComment"
+                  required
+                  maxlength="400"
+                  rows="4"
+                  oninput="updateFeedbackCharCount()"
+                  placeholder="What did you see? Cracks, seepage, debris on the road, tilting trees..."
+                  class="w-full bg-white border border-slate-300 rounded p-1.5 text-xs resize-none"></textarea>
+
+                <div class="text-right text-[10px] text-slate-400 mt-0.5">
+                  <span id="feedbackCharCount">0</span>/400
+                </div>
+
+              </div>
+
+              <div>
+
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                  Photos (up to 3, 5&nbsp;MB each)
+                </label>
+
+                <input
+                  id="feedbackFileInput"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onchange="handleFeedbackFileChange(event)"
+                  class="w-full text-[11px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-800 file:text-white file:text-[11px] file:cursor-pointer" />
+
+                <div
+                  id="feedbackPreviewStrip"
+                  class="flex flex-wrap gap-2 mt-2"></div>
+
+                <div
+                  id="feedbackFileError"
+                  class="text-[11px] text-red-600 mt-1 hidden"></div>
+
+              </div>
+
+              <button
+                type="submit"
+                class="w-full text-xs font-semibold px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-500">
+                Submit Report
+              </button>
+
+              <div
+                id="feedbackSubmitStatus"
+                class="text-[11px] text-center hidden"></div>
+
+            </form>
+
+          </div>
+
+          <!-- GALLERY -->
+          <div class="xl:col-span-2 space-y-3">
+
+            <div class="flex items-center justify-between">
+
+              <h2 class="text-sm font-bold">
+                Submitted Reports
+              </h2>
+
+              <div class="flex items-center gap-2">
+
+                <span
+                  id="feedbackCount"
+                  class="text-[11px] text-slate-500">
+                  0 reports
+                </span>
+
+                <button
+                  onclick="clearAllFeedback()"
+                  class="text-[11px] px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-50">
+                  Clear local data
+                </button>
+
+              </div>
+
+            </div>
+
+            <div
+              id="feedbackGallery"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+
+            <div
+              id="feedbackEmpty"
+              class="hidden bg-white rounded-md border border-dashed border-slate-300 p-8 text-center text-xs text-slate-400">
+              No field reports yet. Be the first to submit one.
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- LIGHTBOX -->
+      <div
+        id="feedbackLightbox"
+        class="hidden fixed inset-0 bg-black/80 z-[9999] items-center justify-center p-6"
+        onclick="closeFeedbackLightbox(event)">
+
+        <button
+          onclick="closeFeedbackLightbox(event)"
+          class="absolute top-4 right-4 text-white/80 hover:text-white">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+
+        <button
+          onclick="feedbackLightboxNav(event, -1)"
+          class="absolute left-3 md:left-8 text-white/70 hover:text-white">
+          <i data-lucide="chevron-left" class="w-8 h-8"></i>
+        </button>
+
+        <img
+          id="feedbackLightboxImg"
+          src=""
+          class="max-h-[85vh] max-w-[90vw] rounded shadow-2xl"
+          onclick="event.stopPropagation()" />
+
+        <button
+          onclick="feedbackLightboxNav(event, 1)"
+          class="absolute right-3 md:right-8 text-white/70 hover:text-white">
+          <i data-lucide="chevron-right" class="w-8 h-8"></i>
+        </button>
+
+        <div
+          id="feedbackLightboxCaption"
+          class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/80 text-xs text-center max-w-lg px-4">
+        </div>
+
+      </div>
+
+      <!-- GLOBAL ALERT FLASH: fired when a risk dot is clicked on either map -->
+
+      <div id="globalAlertFlash" class="hidden"></div>
+
+      <div
+        id="globalAlertBanner"
+        role="alert"
+        aria-live="assertive"
+        class="hidden rounded-md shadow-xl px-4 py-2.5 flex items-center gap-3 text-white max-w-md w-[92vw] sm:w-auto">
+
+        <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0"></i>
+
+        <div class="min-w-0">
+          <div id="globalAlertBannerTitle" class="text-xs font-bold uppercase tracking-wide truncate">
+            --
+          </div>
+          <div id="globalAlertBannerSubtitle" class="text-[11px] text-white/90 truncate">
+            --
+          </div>
+        </div>
+
+        <button
+          id="globalAlertMuteBtn"
+          onclick="toggleGlobalAlertSound()"
+          title="Mute alert sound"
+          aria-label="Mute alert sound"
+          class="ml-auto flex-shrink-0 text-white/80 hover:text-white text-sm leading-none">
+          🔊
+        </button>
+
+        <button
+          onclick="dismissGlobalAlertFlash()"
+          class="flex-shrink-0 text-white/80 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- ==========================================================
+       ONLY JS FILE
+       ========================================================== -->
+
+  <script src="landslide-dashboard.js"></script>
+
+</body>
+</html>

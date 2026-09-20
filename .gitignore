@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.vscode/
+*.log
+catboost_info/
+*.csv
+*.xls
