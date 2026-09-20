@@ -188,7 +188,7 @@ def main():
         os.path.join(base_dir, "GSI_landslide_inventory_NE_Region.csv"),
         os.path.join(base_dir, "GSI_landslide_inventory_NE_Region.csv.xls"),
         os.path.join(base_dir, "NE_Region_Landslide_Predictions_Updated.csv"),
-        r"C:\Users\Asus\SIH\GSI_landslide_inventory_NE_Region.csv.xls",
+        r"D:SIH\GSI_landslide_inventory_NE_Region.csv.xls",
     ]
     csv_path = next((candidate for candidate in candidates if os.path.exists(candidate)), None)
     if csv_path is None:
