@@ -384,6 +384,19 @@
 
     <div class="flex items-center space-x-4">
 
+      <button
+        onclick="toggleSidebar()"
+        id="sidebarToggleBtn"
+        aria-label="Toggle navigation menu"
+        class="md:hidden p-1.5 -ml-1 text-slate-200 hover:text-white rounded hover:bg-slate-800 shrink-0">
+
+        <i
+          data-lucide="menu"
+          class="w-5 h-5">
+        </i>
+
+      </button>
+
       <div class="flex items-center space-x-2.5">
 
         <div
@@ -523,14 +536,31 @@
          ======================================================== -->
 
     <aside
-      class="w-56 bg-brand-800 text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-700/60">
+      id="sidebar"
+      class="w-64 md:w-56 bg-brand-800 text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-700/60 fixed top-14 bottom-0 left-0 z-40 -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto md:static md:top-auto md:bottom-auto md:z-auto md:translate-x-0 md:overflow-y-visible">
 
       <div class="py-3 px-2">
 
-        <div
-          class="text-[10px] font-semibold text-slate-400 px-3 uppercase tracking-wider mb-2">
+        <div class="flex items-center justify-between px-1 mb-1">
 
-          Operational Modules
+          <div
+            class="text-[10px] font-semibold text-slate-400 px-2 uppercase tracking-wider">
+
+            Operational Modules
+
+          </div>
+
+          <button
+            onclick="toggleSidebar(false)"
+            aria-label="Close navigation menu"
+            class="md:hidden p-1 text-slate-400 hover:text-white rounded hover:bg-slate-700/50">
+
+            <i
+              data-lucide="x"
+              class="w-4 h-4">
+            </i>
+
+          </button>
 
         </div>
 
@@ -733,6 +763,13 @@
       </div>
 
     </aside>
+
+    <!-- Mobile backdrop overlay for sidebar -->
+    <div
+      id="sidebarOverlay"
+      onclick="toggleSidebar(false)"
+      class="hidden fixed inset-0 top-14 bg-black/50 z-30 md:hidden">
+    </div>
 
     <!-- ========================================================
          MAIN
@@ -2603,6 +2640,56 @@
     </main>
 
   </div>
+
+  <!-- ==========================================================
+       MOBILE SIDEBAR TOGGLE
+       Shows/hides the "Operational Modules" drawer on small screens
+       via the hamburger button in the header.
+       ========================================================== -->
+
+  <script>
+    (function () {
+      var sidebar = document.getElementById('sidebar');
+      var overlay = document.getElementById('sidebarOverlay');
+
+      window.toggleSidebar = function (forceOpen) {
+        if (!sidebar || !overlay) return;
+
+        var isOpen = !sidebar.classList.contains('-translate-x-full');
+        var open = typeof forceOpen === 'boolean' ? forceOpen : !isOpen;
+
+        if (open) {
+          sidebar.classList.remove('-translate-x-full');
+          overlay.classList.remove('hidden');
+          document.body.classList.add('overflow-hidden', 'md:overflow-auto');
+        } else {
+          sidebar.classList.add('-translate-x-full');
+          overlay.classList.add('hidden');
+          document.body.classList.remove('overflow-hidden', 'md:overflow-auto');
+        }
+      };
+
+      // Auto-close the drawer after picking a module on mobile,
+      // and whenever the viewport is resized back up to desktop.
+      document.addEventListener('DOMContentLoaded', function () {
+        var navButtons = sidebar ? sidebar.querySelectorAll('.nav-btn') : [];
+        navButtons.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (window.innerWidth < 768) {
+              window.toggleSidebar(false);
+            }
+          });
+        });
+      });
+
+      window.addEventListener('resize', function () {
+        if (window.innerWidth >= 768) {
+          overlay.classList.add('hidden');
+          document.body.classList.remove('overflow-hidden');
+        }
+      });
+    })();
+  </script>
 
   <!-- ==========================================================
        ONLY JS FILE
