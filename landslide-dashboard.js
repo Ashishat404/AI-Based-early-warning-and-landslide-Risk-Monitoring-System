@@ -2656,7 +2656,7 @@
   const API_BASE_URL =
     window.PRAVAHA_API_BASE_URL ||
     localStorage.getItem("PRAVAHA_API_BASE_URL") ||
-    "http://127.0.0.1:5000";
+    "";
 
 
   const API_ENDPOINTS = [
