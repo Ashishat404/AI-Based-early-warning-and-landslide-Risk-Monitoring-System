@@ -12,24 +12,30 @@ import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-app = Flask(__name__, static_folder=".", static_url_path="")
+# Point static_folder to the root directory where index.html and .js files reside
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+app = Flask(__name__, static_folder=ROOT_DIR, static_url_path="")
+CORS(app)
 
-# Locate dataset CSV
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Locate dataset CSV from parent directory (SIH)
 DATA_CANDIDATES = [
-    os.path.join(BASE_DIR, "NE_Region_Landslide_Predictions_Updated.csv"),
-    os.path.join(BASE_DIR, "GSI_landslide_inventory_NE_Region.csv"),
-    os.path.join(BASE_DIR, "GSI_landslide_inventory_NE_Region.csv.xls"),
+    os.path.join(ROOT_DIR, "NE_Region_Landslide_Predictions_Updated.csv"),
+    os.path.join(ROOT_DIR, "GSI_landslide_inventory_NE_Region.csv"),
+    os.path.join(ROOT_DIR, "GSI_landslide_inventory_NE_Region.csv.xls"),
 ]
 
 CSV_PATH = next((path for path in DATA_CANDIDATES if os.path.exists(path)), None)
+
 
 def load_and_preprocess_data():
     """Load and normalize prediction records."""
     if not CSV_PATH or not os.path.exists(CSV_PATH):
         return pd.DataFrame()
 
-    df = pd.read_csv(CSV_PATH)
+    if CSV_PATH.endswith(('.xls', '.xlsx')):
+        df = pd.read_excel(CSV_PATH)
+    else:
+        df = pd.read_csv(CSV_PATH)
     
     # Standardize column names
     df.columns = [re.sub(r'\s+', ' ', col).strip() for col in df.columns]
@@ -65,14 +71,14 @@ def load_and_preprocess_data():
     if 'Risk_Score' not in df.columns:
         risk_scores = []
         for _, row in df.iterrows():
-            score = row['Confidence']
+            score = float(row['Confidence'])
             mov = str(row['Movement_Class']).lower()
             if 'slide' in mov:
-                score += 5
+                score += 5.0
             elif 'fall' in mov:
-                score += 3
+                score += 3.0
             if row['Is_Highway'] == 1:
-                score += 5
+                score += 5.0
             risk_scores.append(min(round(score, 1), 99.0))
         df['Risk_Score'] = risk_scores
 
@@ -91,8 +97,15 @@ def load_and_preprocess_data():
 
     return df
 
+
 # Global Data Cache
 PREDICTIONS_DF = load_and_preprocess_data()
+
+
+@app.route('/')
+def serve_frontend():
+    """Serves index.html when opening the base URL."""
+    return app.send_static_file('index.html')
 
 
 @app.route('/api/dashboard', methods=['GET'])
@@ -170,12 +183,16 @@ def get_vulnerable_zones():
     if PREDICTIONS_DF.empty:
         return jsonify([])
 
+    def safe_mode(series):
+        mode_vals = series.mode()
+        return str(mode_vals.iloc[0]) if not mode_vals.empty else 'Unknown'
+
     grouped = PREDICTIONS_DF.groupby(['State', 'District']).agg(
         records=('Risk_Score', 'count'),
-        criticalCount=('Risk_Level', lambda x: (x == 'CRITICAL').sum()),
-        highCount=('Risk_Level', lambda x: (x == 'HIGH').sum()),
+        criticalCount=('Risk_Level', lambda x: int((x == 'CRITICAL').sum())),
+        highCount=('Risk_Level', lambda x: int((x == 'HIGH').sum())),
         avgRisk=('Risk_Score', 'mean'),
-        dominantMovement=('Movement_Class', lambda x: x.mode()[0] if not x.empty else 'Unknown')
+        dominantMovement=('Movement_Class', safe_mode)
     ).reset_index()
 
     grouped = grouped.sort_values(by='avgRisk', ascending=False)
